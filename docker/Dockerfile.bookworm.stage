@@ -1,0 +1,40 @@
+# ---------- 1. 基础依赖层 ----------
+FROM debian:bookworm AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
+
+COPY . .
+
+# 安装构建依赖
+RUN apt update && apt install -y \
+    git curl wget make g++ pkg-config cmake apt-transport-https ca-certificates \
+    autoconf automake libtool dpkg-dev build-essential \
+    fontforge poppler-utils \
+    libpng-dev zlib1g-dev libfreetype6-dev \
+    libjpeg-dev libopenjp2-7-dev \
+    libxml2-dev gettext jq \
+ && rm -rf /var/lib/apt/lists/*
+
+# 移除脚本中的 sudo 与不必要的依赖
+RUNsed -i 's/sudo //g' buildScripts/* && \
+    sed -i '/openjdk-8-jre-headless/d' buildScripts/getBuildToolsApt && \
+    ./buildScripts/buildInstallLocallyApt && \
+    echo "@media print{body{display:none;}}" | tee -a /usr/local/share/pdf2htmlEX/base.css /usr/local/share/pdf2htmlEX/base.min.css > /dev/null
+
+# ----------  运行层（最小化镜像） ----------
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# 安装运行时所需的最小依赖
+RUN apt update && apt install -y \
+    fontforge poppler-utils libpng16-16 zlib1g libfreetype6 \
+    libjpeg62-turbo libopenjp2-7 libxml2 gettext jq && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+# 从构建层拷贝已安装的 pdf2htmlEX
+COPY --from=builder /usr/local/bin/pdf2htmlEX /usr/local/bin/pdf2htmlEX
+COPY --from=builder /usr/local/share/pdf2htmlEX /usr/local/share/pdf2htmlEX
+
+CMD ["pdf2htmlEX"]
