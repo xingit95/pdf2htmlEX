@@ -17,7 +17,7 @@ RUN apt update && apt install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # 移除脚本中的 sudo 与不必要的依赖
-RUNsed -i 's/sudo //g' buildScripts/* && \
+RUN sed -i 's/sudo //g' buildScripts/* && \
     sed -i '/openjdk-8-jre-headless/d' buildScripts/getBuildToolsApt && \
     ./buildScripts/buildInstallLocallyApt && \
     echo "@media print{body{display:none;}}" | tee -a /usr/local/share/pdf2htmlEX/base.css /usr/local/share/pdf2htmlEX/base.min.css > /dev/null
