@@ -35,7 +35,6 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/pdf2htmlex:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/pdf2htmlex:${{ github.sha }}
 
       # 5️⃣ （可选）构建完成后打印镜像信息
       - name: Verify image
