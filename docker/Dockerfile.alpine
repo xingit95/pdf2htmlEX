@@ -7,7 +7,12 @@ COPY . .
 
 # 修改官方脚本，移除 sudo / Java 依赖
 RUN apk update && \
-    apk add git && \
+    apk add --no-cache \
+    bash git curl wget make g++ cmake pkgconfig \
+    autoconf automake libtool gettext jq \
+    fontforge poppler-utils \
+    libpng-dev zlib-dev freetype-dev \
+    libjpeg-turbo-dev openjpeg-dev libxml2-dev
     sed -i 's/sudo //g' buildScripts/* && \
     sed -i '/openjdk-8-jre-headless/d' buildScripts/getBuildToolsApt && \
     ./buildScripts/buildInstallLocallyAlpine && \
