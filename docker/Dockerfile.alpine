@@ -12,7 +12,7 @@ RUN apk update && \
     autoconf automake libtool gettext jq \
     fontforge poppler-utils \
     libpng-dev zlib-dev freetype-dev \
-    libjpeg-turbo-dev openjpeg-dev libxml2-dev
+    libjpeg-turbo-dev openjpeg-dev libxml2-dev && \
     sed -i 's/sudo //g' buildScripts/* && \
     sed -i '/openjdk-8-jre-headless/d' buildScripts/getBuildToolsApt && \
     ./buildScripts/buildInstallLocallyAlpine && \
