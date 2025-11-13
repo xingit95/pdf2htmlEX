@@ -1,25 +1,40 @@
-# ---------- build stage ----------
-FROM alpine:3.20 AS builder
-ARG DEBIAN_FRONTEND=noninteractive
-
-WORKDIR /app
-COPY . .
+# ---------- install deps stage ----------
+# alpine版本不能低于16
+FROM alpine:3.18 AS deps
 
 # 修改官方脚本，移除 sudo / Java 依赖
 RUN apk update && \
     apk add --no-cache \
-    bash git curl wget make g++ cmake pkgconfig \
-    autoconf automake libtool gettext jq \
-    fontforge poppler-utils \
-    libpng-dev zlib-dev freetype-dev \
-    libjpeg-turbo-dev openjpeg-dev libxml2-dev && \
-    sed -i 's/sudo //g' buildScripts/* && \
+  sudo tar  wget git  pkgconfig ruby cmake make gcc g++ gettext openjdk8 jq \
+    gettext           \
+  gnu-libiconv-dev  \
+  cairo-dev         \
+  libpng-dev        \
+  freetype-dev      \
+  gettext-dev       \
+  glib-dev          \
+  fontconfig-dev    \
+  libjpeg-turbo-dev \
+  libxml2-dev \
+  boost-dev gtk+3.0-dev gdk-pixbuf-dev openjpeg-dev pkgconf glib-dev
+
+# ---------- build stage ----------
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+
+# buildScripts/buildPdf2htmlEX pdf2htmlEX/src/ArgParser.h pdf2htmlEX/src/util/const.h 需要修改这些文件源码和cmake参数才能在alpine上跑
+RUN sed -i 's/sudo //g' buildScripts/* && \
+    sed -i 's/#ifndef nullptr/#if 0  \/\/ #ifndef nullptr/' pdf2htmlEX/src/ArgParser.h pdf2htmlEX/src/util/const.h && \
+    sed -i 's/#define nullptr (NULL)/\/\/ #define nullptr (NULL)/' pdf2htmlEX/src/ArgParser.h pdf2htmlEX/src/util/const.h && \
+    sed -i 's/#endif \/\/ nullptr/#endif/' pdf2htmlEX/src/ArgParser.h pdf2htmlEX/src/util/const.h && \
+    sed -i 's/cmake/cmake -DCMAKE_C_FLAGS="\$(pkg-config --cflags glib-2.0)" -DCMAKE_CXX_FLAGS="\$(pkg-config --cflags glib-2.0)"/' buildScripts/buildPdf2htmlEX && \
     sed -i '/openjdk-8-jre-headless/d' buildScripts/getBuildToolsApt && \
     ./buildScripts/buildInstallLocallyAlpine && \
     echo "@media print{body{display:none;}}" | tee -a /usr/local/share/pdf2htmlEX/base.css /usr/local/share/pdf2htmlEX/base.min.css > /dev/null
 
 # ---------- runtime stage ----------
-FROM alpine:3.20
+FROM alpine:3.18
 RUN apk update && apk add --no-cache \
     tar              \
     libstdc++        \
@@ -32,7 +47,7 @@ RUN apk update && apk add --no-cache \
     cairo            \
     libpng           \
     libjpeg-turbo    \
-    libxml2
+    libxml2 openjpeg
 
 # 从构建层拷贝已安装的 pdf2htmlEX
 COPY --from=builder /usr/local/bin/pdf2htmlEX /usr/local/bin/pdf2htmlEX
